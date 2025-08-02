@@ -1,0 +1,60 @@
+function applyCoupon(coupon, Price) {
+  const today = new Date();
+  const validFrom = new Date(coupon.valid_from);
+  const validTo = new Date(coupon.valid_to);
+  const errors = [];
+
+  if (!coupon.code || !coupon.valid_from || !coupon.valid_to) {
+    errors.push('Required coupon information is missing.');
+  }
+
+  if (!coupon.is_active) {
+    errors.push('Coupon is not active.');
+  }
+
+  if (today < validFrom || today > validTo) {
+    errors.push('Coupon is not valid on this date.');
+  }
+
+  if (coupon.max_uses && coupon.used >= coupon.max_uses) {
+    errors.push('This coupon has reached its maximum usage limit.');
+  }
+
+  if (coupon.min_amount && Price < coupon.min_amount) {
+    errors.push(`Minimum order amount for this coupon is ₹${coupon.min_amount}.`);
+  }
+
+  if (coupon.max_amount && Price > coupon.max_amount) {
+    errors.push(`Maximum order amount for this coupon is ₹${coupon.max_amount}.`);
+  }
+
+  if (errors.length > 0) {
+    return { success: false, message: 'Coupon cannot be applied.', reasons: errors };
+  }
+
+  let discount = 0;
+  if (coupon.type === 'fixed') {
+    discount = coupon.value;
+  } else if (coupon.type === 'percentage') {
+    discount = (coupon.value / 100) * Price;
+  }
+
+  coupon.used += 1;
+
+  const finalAmount = Price - discount;
+
+  return {
+    success: true,
+    message: `Coupon applied. You saved ₹${discount}.`,
+    discount: discount,
+    payment_money: finalAmount,
+    updatedUsedCount: coupon.used 
+  };
+}
+
+const coupon = {"id":3,"name":"rerum laboriosam","code":"UDRLN3VC","type":"percentage","value":65,"min_amount":664,"max_amount":1418,"max_uses":null,"used":1,"valid_from":"2025-05-13","valid_to":"2025-05-29","is_active":1,"created_at":"2025-05-13T17:13:30.000000Z","updated_at":"2025-05-13T17:13:30.000000Z"}
+
+const price = 1000;
+
+const result = applyCoupon(coupon, price);
+console.log(result);
